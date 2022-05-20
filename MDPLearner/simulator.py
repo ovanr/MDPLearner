@@ -1,48 +1,94 @@
 import stormpy
 import stormpy.core
 import stormpy.simulator
-from typing import List, Any, cast
-from sys import argv, stderr
+import logging
 
-if len(argv) == 1:
-    raise Exception("Enter path of prism file")
+from stormpy.simulator import SparseSimulator
+
+from sys import stderr
+from typing import List, cast
+
+from MDPLearner.model import Model, Scheduler, State, Action
+
+Observation = List[tuple[State,Action,State]]
 
 def oops(err):
     print(err, file=stderr)
     exit(1)
     
 class Simulator:
-    def run_simulator(model):
-        simulator = stormpy.simulator.create_simulator(model, seed=42)
-        if not simulator:
+    def __init__(self, model: Model):
+        self.model = model
+        self._simulator = stormpy.simulator.create_simulator(model.storm_model, seed=42)
+        if not self._simulator:
             oops("simulator not loaded")
+
+        self._cur_state, _, _ = self.simulator.restart()
+
+    @property
+    def simulator(self) -> SparseSimulator:
+        if not self._simulator:
+            oops("simulator not loaded")
+        return cast(SparseSimulator, self._simulator)
+
+    @property
+    def logger(self):
+        return logging.getLogger("Simulator")
+
+    @property
+    def cur_state(self) -> State:
+        return self._cur_state
+
+    def reset(self):
+        self._cur_state, _, _ = self.simulator.restart()
+
+    @property
+    def available_actions(self):
+        return self.simulator.available_actions()
+
+    def take_action(self, action) -> State:
+        self._cur_state, _, _ = self.simulator.step(action)
+        return self._cur_state
+        
+    @property
+    def is_in_sink_state(self) -> bool:
+        if self.simulator:
+            return self.simulator.is_done()
+        else:
+            return False
+
+    def run_simulator_with_scheduler(self, scheduler: Scheduler):
+        observations: List[Observation] = []
+        runs = self.model.num_states() * 10
+        self.logger.info(f"Running with scheduler: {scheduler}")
     
-        final_outcomes = dict()
-    
-        for _ in range(1000):
-            while not simulator.is_done():
-                observation, reward, labels = simulator.step()
-            print(labels)
-            if observation not in final_outcomes:
-                final_outcomes[observation] = 1
-            else:
-                final_outcomes[observation] += 1
-            simulator.restart()
-    
-        options = stormpy.BuilderOptions([])
-        options.set_build_state_valuations()
-        options.set_build_all_reward_models()
-        model = stormpy.build_sparse_model_with_options(prism_program, options)
-        simulator = stormpy.simulator.create_simulator(model, seed=42)
-        simulator.set_observation_mode(stormpy.simulator.SimulatorObservationMode.PROGRAM_LEVEL)
-        final_outcomes = dict()
-        print(simulator.get_reward_names())
-        for n in range(1000):
-            while not simulator.is_done():
-                observation, reward, labels = simulator.step()
-            if observation not in final_outcomes:
-                final_outcomes[observation] = 1
-            else:
-                final_outcomes[observation] += 1
-            simulator.restart()
-        print(", ".join([f"{str(k)}: {v}" for k,v in final_outcomes.items()]))
+        for _ in range(0, runs):
+            self.reset()
+            observation: Observation = []
+            is_in_sink = False
+
+            for _ in range(0, self.model.num_states() + 10):
+                prev_state = self.cur_state
+                action = scheduler[prev_state]
+                next_state = self.take_action(action)
+                observation.append((prev_state, action, next_state))
+                self.logger.info(f"From state {prev_state} we took action {action} and went to {next_state}")
+
+                if is_in_sink:
+                    break
+                if self.is_in_sink_state:
+                    is_in_sink = True
+
+            observations.append(observation)
+
+        return observations
+
+    def mk_observations(self) -> List[Observation]:
+        obs: List[Observation] = []
+
+        for scheduler in self.model.mk_schedulers():
+            obs.extend(self.run_simulator_with_scheduler(scheduler))
+
+        return obs
+            
+
