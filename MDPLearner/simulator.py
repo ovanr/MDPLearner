@@ -57,7 +57,7 @@ class Simulator:
         else:
             return False
 
-    def run_simulator_with_scheduler(self, scheduler: Scheduler):
+    def run_simulator_with_scheduler(self, scheduler: Scheduler) -> List[Observation]:
         observations: List[Observation] = []
         runs = self.model.num_states() * 10
         self.logger.info(f"Running with scheduler: {scheduler}")
