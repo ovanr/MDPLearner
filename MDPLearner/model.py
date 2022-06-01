@@ -66,7 +66,7 @@ class Model:
     def __init__(self, model_path: str):
         self.prism_program = stormpy.parse_prism_program(model_path) # type: ignore
         self.model = stormpy.build_model(self.prism_program)
-        self.transition_matrix = self._mk_transition_matrix()
+        self.transition_matrix: Matrix = self._mk_transition_matrix()
 
     @property
     def storm_model(self):
@@ -88,6 +88,13 @@ class Model:
     @property
     def initial_states(self) -> List[State]:
         return self.model.initial_states
+
+    def __getitem__(self, key: State) -> Dict[Action,Dict[State,Probability]]:
+        return self.transition_matrix[key]
+
+    @property
+    def states(self) -> List[State]:
+        return list(self.transition_matrix.keys())
 
     def num_states(self) -> int:
         return self.model.nr_states
@@ -118,7 +125,17 @@ class Model:
         
             for action in state.actions:
                 for transition in action.transitions:
-                    print(f"From{ ' initial' if initial else '' } state {state}, "
+                    print(f"From{ ' initial' if initial else '' } state {state}, action {action} "
                           f"with probability {transition.value()}, "
                           f"go to state {transition.column}")
 
+    def print_matrix(self, matrix: Matrix):
+        print("Number of states: {}".format(len(matrix.keys())))
+        print("Number of transitions: {}".format(self.model.nr_transitions))
+
+        for state in matrix.keys():
+            for action in matrix[state].keys():
+                for next_state in matrix[state][action].keys():
+                    print(f"From state {state}, action {action} "
+                          f"with probability {matrix[state][action][next_state]}, "
+                          f"go to state {next_state}")
