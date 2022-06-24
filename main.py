@@ -3,6 +3,7 @@ from sys import argv
 
 from MDPLearner.logging import set_up_logging, INFO, WARNING
 from MDPLearner.frequentist import FrequentistLearner
+from MDPLearner.dirichlet import DirichletLearner
 from MDPLearner.simulator import Simulator
 from MDPLearner.model import Model
 
@@ -26,3 +27,8 @@ public_matrix = simulator.get_public_matrix()
 
 freq_learner = FrequentistLearner(public_matrix, observations)
 print(freq_learner.run_learner())
+
+learner = DirichletLearner(model, observations)
+new_matrix = learner.run_learner()
+model.print_model()
+model.print_matrix(new_matrix)
