@@ -8,7 +8,7 @@ from stormpy.simulator import SparseSimulator
 from sys import stderr
 from typing import List, cast
 
-from MDPLearner.model import Model, Scheduler, State, Action
+from MDPLearner.model import Model, Scheduler, State, Action, Matrix
 
 Observation = List[tuple[State,Action,State]]
 
@@ -56,6 +56,10 @@ class Simulator:
             return self.simulator.is_done()
         else:
             return False
+
+    def get_public_matrix(self) -> Matrix:
+        _, public_matrix = self.model._mk_transition_matrix()
+        return public_matrix
 
     def run_simulator_with_scheduler(self, scheduler: Scheduler) -> List[Observation]:
         observations: List[Observation] = []

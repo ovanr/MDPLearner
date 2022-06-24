@@ -21,4 +21,8 @@ set_up_logging(logging_mode)
 model = Model(path)
 simulator = Simulator(model)
 
-simulator.mk_observations()
+observations = simulator.mk_observations()
+public_matrix = simulator.get_public_matrix()
+
+freq_learner = FrequentistLearner(public_matrix, observations)
+print(freq_learner.run_learner())
