@@ -17,12 +17,13 @@ def oops(err):
     exit(1)
     
 class Simulator:
-    def __init__(self, model: Model):
+    def __init__(self, model: Model, N: int):
         self.model = model
         self._simulator = stormpy.simulator.create_simulator(model.storm_model, seed=42)
         if not self._simulator:
             oops("simulator not loaded")
 
+        self.N = N
         self._cur_state, _, _ = self.simulator.restart()
 
     @property
@@ -63,7 +64,7 @@ class Simulator:
 
     def run_simulator_with_scheduler(self, scheduler: Scheduler) -> List[Observation]:
         observations: List[Observation] = []
-        runs = self.model.num_states() * 10
+        runs = self.N
         self.logger.info(f"Running with scheduler: {scheduler}")
     
         for _ in range(0, runs):

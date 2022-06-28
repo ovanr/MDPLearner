@@ -3,6 +3,7 @@ from copy import deepcopy
 from math import ceil
 
 import stormpy
+from string import ascii_lowercase
 
 State = int
 Action = int
@@ -105,7 +106,7 @@ class Model:
     def num_states(self) -> int:
         return self.model.nr_states
 
-    def _mk_transition_matrix(self) -> Matrix:
+    def _mk_transition_matrix(self) -> tuple[Matrix, Matrix]:
         matrix = {}
         public_matrix = {}
         for state in self.model.states:
@@ -149,3 +150,21 @@ class Model:
                     print(f"From state {state}, action {action} "
                           f"with probability {matrix[state][action][next_state]}, "
                           f"go to state {next_state}")
+
+    def gen_prism_model(self, matrix: Matrix, out_file: str):
+        lines = []
+        lines.append("mdp")
+        lines.append("module main")
+        lines.append(f"   s : [0..{self.num_states() - 1}] init {' '.join(map(str, self.initial_states))};")
+
+        for state in matrix.keys():
+            for action in matrix[state].keys():
+                next_transitions = map(lambda pair: f"{pair[1]}:(s'={pair[0]})", matrix[state][action].items())
+                lines.append(f"   [{ascii_lowercase[action]}] s={state} -> {' '.join(next_transitions)};")
+
+        lines.append("endmodule")
+
+        file = open(out_file, "w+")
+        file.write("\n".join(lines))
+        file.close()
+         

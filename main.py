@@ -1,5 +1,6 @@
 
 from sys import argv
+import argparse
 
 from MDPLearner.logging import set_up_logging, INFO, WARNING
 from MDPLearner.frequentist import FrequentistLearner
@@ -7,28 +8,40 @@ from MDPLearner.dirichlet import DirichletLearner
 from MDPLearner.simulator import Simulator
 from MDPLearner.model import Model
 
-logging_mode = WARNING
+parser = argparse.ArgumentParser(description='Model Learner')
+parser.add_argument('input', metavar='str', type=str, help='input model to learn')
+parser.add_argument('-N', metavar='int', type=int, default=1000, help='number of simulator runs')
+parser.add_argument('--batches', metavar='int', type=int, default=10, help='number of batches in dirichlet learner')
+parser.add_argument('--init-alpha', metavar='float', type=float, default=0.5, help='dirichlet learner init alpha value')
+parser.add_argument( '--verbose', default=False, action="store_true", help='be verbose')
+args = parser.parse_args()
 
-if len(argv) == 3 and argv[1] == "-v":
-    logging_mode = INFO
-    path = argv[2]
-elif len(argv) == 2:
-    path = argv[1]
+if args.verbose:
+    set_up_logging(INFO)
 else:
-    raise Exception(f"Usage: {argv[0]} [-v] FILE")
+    set_up_logging(WARNING)
 
-set_up_logging(logging_mode)
-
-model = Model(path)
-simulator = Simulator(model)
+model = Model(args.input)
+print("--------- Actual Learned Model -----------")
+model.print_model()
+model.gen_prism_model(model.transition_matrix, "out/model.prism")
+simulator = Simulator(model, args.N)
 
 observations = simulator.mk_observations()
+
+print()
+print("--------- Frequentist Learned Model -----------")
 public_matrix = simulator.get_public_matrix()
-
 freq_learner = FrequentistLearner(public_matrix, observations)
-print(freq_learner.run_learner())
+frequentist_matrix = freq_learner.run_learner()
+model.print_matrix(frequentist_matrix)
+model.gen_prism_model(frequentist_matrix, "out/frequentist_model.prism")
 
+print()
+print("--------- Dirichlet Learned Model -----------")
 learner = DirichletLearner(model, observations)
-new_matrix = learner.run_learner()
-model.print_model()
-model.print_matrix(new_matrix)
+dirichlet_matrices = learner.run_learner_incremental(num_batches=args.batches, init_value=args.init_alpha)
+for (i,m) in enumerate(dirichlet_matrices):
+    print(f"Matrix {i}:")
+    model.print_matrix(m)
+    model.gen_prism_model(m, f"out/dirichlet_model_{i}.prism")

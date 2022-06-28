@@ -1,0 +1,36 @@
+set terminal pdf size 10in,8in font ",23"
+set output "out/plot_N.pdf"
+
+set title "Comparison of Learners"
+set autoscale
+
+set ylabel "Simulator Runs"
+set xlabel "Probability"
+
+set xrange [100:5000]
+set grid
+set logscale x 2
+set yrange [0:1]
+
+# set exponentially increasing xtics
+set xtics ()
+do for [i=0:12] { set xtics add (sprintf("%d", 2**i) 2**i) }
+
+set key left top box 1
+
+# specify line coloring
+set style data lines
+set style line 1 lt 3 lw 4 lc rgb '#aadc32' # lime green
+set style line 2 lt 3 lw 4 lc rgb '#fde725' # yellow
+set style line 3 lt 3 lw 4 lc rgb '#21908d' # blue-green
+set style line 4 lt 3 lw 4 lc rgb '#cb4679' # magenta
+set style line 5 lt 3 lw 4 lc rgb '#e8991a' # orange
+set style line 6 lt 3 lw 4 dt 5 lc rgb '#999999' # light-grey
+set style line 7 lt 3 lw 4 dt 2 lc rgb '#555555' # medium-grey
+set style line 8 lt 3 lw 4 dt 3 lc rgb '#111111' # dark-grey
+set style line 9 lt 3 lw 4 dt 1 lc rgb '#777777' # light-light-grey
+set style line 10 lt 3 lw 4 dt 4 lc rgb '#777777' # medium2-grey
+
+plot "out/actual.dat" using 1:2 with lines ls 1 title "Actual", \
+     "out/frequentist.dat" using 1:2 with lines ls 2 title "Frequentist", \
+     "out/dirichlet.dat" using 1:2 with lines ls 3 title "Dirichlet"

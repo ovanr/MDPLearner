@@ -4,8 +4,24 @@ from MDPLearner.model import Matrix, Probability, State, Action
 from MDPLearner.simulator import Observation
 
 ComputedProbs = Dict[tuple[State, Action, State], Probability]
+# Matrix = Dict[State, Dict[Action, Dict[State, Probability]]]
 
+def computedProbsToDict(flatProbs):
+    matrix = {}
+    for (s, _, _) in flatProbs:
+        next_pairs = filter(lambda key: s == key[0], flatProbs.keys())
+        action_dict = {}
+        for (_, a, s_next) in next_pairs:
+            prob = flatProbs[(s,a,s_next)]
+            if a in action_dict:
+                action_dict[a][s_next] = prob
+            else:
+                action_dict[a] = { s_next: prob }
 
+        matrix[s] = action_dict
+
+    return matrix
+        
 class FrequentistLearner:
     def __init__(self, public_matrix: Matrix, observations: Observation, laplace_smoothing: float = 0):
         self.matrix = public_matrix
@@ -13,7 +29,7 @@ class FrequentistLearner:
         self.possible_observations = self.build_all_possible_observations()
         self.delta = laplace_smoothing
 
-    def build_all_possible_observations(self):
+    def build_all_possible_observations(self) -> Observation:
         possible_obs: Observation = []
         for state in self.matrix.keys():
             for action in self.matrix[state].keys():
@@ -21,7 +37,7 @@ class FrequentistLearner:
                     possible_obs.append((state, action, next_state))
         return possible_obs
 
-    def run_learner(self) -> ComputedProbs:
+    def run_learner(self) -> Matrix:
         """
         For every observation in observations, count how many times a transition was taken.
         :return: Dict with computed probabilities for every state, action, state tuple.
@@ -49,4 +65,4 @@ class FrequentistLearner:
         for key in computedprobs.keys():
             computedprobs[key] = (computedprobs[key] + self.delta) / (N[tuple[key[0], key[1]]] + m[tuple[key[0], key[1]]] * self.delta)
 
-        return computedprobs
+        return computedProbsToDict(computedprobs)
