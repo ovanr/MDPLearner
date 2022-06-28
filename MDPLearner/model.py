@@ -10,6 +10,7 @@ Probability = float
 Matrix = Dict[State, Dict[Action, Dict[State, Probability]]]
 PublicMatrix = Dict[State, Dict[Action, State]]
 Scheduler = Dict[State, Action]
+CoupledList = List[List[tuple[State, Action, State]]]
 
 
 def freeze(x):
@@ -70,8 +71,8 @@ class Model:
     def __init__(self, model_path: str):
         self.prism_program = stormpy.parse_prism_program(model_path)  # type: ignore
         self.model = stormpy.build_model(self.prism_program)
-        self.transition_matrix, _ = self._mk_transition_matrix()
-
+        self.transition_matrix = self._mk_transition_matrix()
+        self.coupled_probs: CoupledList = self.mk_coupled_list()
 
     @property
     def storm_model(self):
@@ -95,7 +96,7 @@ class Model:
     def initial_states(self) -> List[State]:
         return self.model.initial_states
 
-    def __getitem__(self, key: State) -> Dict[Action,Dict[State,Probability]]:
+    def __getitem__(self, key: State) -> Dict[Action, Dict[State, Probability]]:
         return self.transition_matrix[key]
 
     @property
@@ -107,21 +108,45 @@ class Model:
 
     def _mk_transition_matrix(self) -> Matrix:
         matrix = {}
-        public_matrix = {}
         for state in self.model.states:
             matrix[state.id] = {}
-            public_matrix[state.id] = {}
             for action in state.actions:
                 matrix[state.id][action.id] = {}
-                public_matrix[state.id][action.id] = {}
                 for transition in action.transitions:
                     matrix[state.id][action.id][transition.column] = transition.value()
-                    public_matrix[state.id][action.id][transition.column] = None
-        return matrix, public_matrix
+        return matrix
 
     def mk_schedulers(self) -> List[Scheduler]:
-        matrix, _ = self._mk_transition_matrix()
+        matrix = self._mk_transition_matrix()
         return make_all_schedulers(matrix)
+
+    def mk_coupled_list(self) -> CoupledList:
+        # each model file should have data on which transition probabilities are coupled
+        return [[]]
+
+    def update_probs_coupled(self, matrix: Matrix) -> Matrix:
+        # mean
+        if not self.coupled_probs[0]:  # if list is empty
+            return matrix
+
+        for elem in self.coupled_probs:
+            temp = 0
+            for trans in elem:
+                temp += matrix[trans[0]][trans[1]][trans[2]]
+            temp /= len(elem)
+            for trans in elem:
+                matrix[trans[0]][trans[1]][trans[2]] = temp
+
+        # normalise
+        for state in matrix.keys():
+            for action in matrix[state].keys():
+                temp = 0
+                for new_state in matrix[state][action].keys():
+                    temp += matrix[state][action][new_state]
+                for new_state in matrix[state][action].keys():
+                    matrix[state][action][new_state] /= temp
+
+        return matrix
 
     def print_model(self):
         print("Number of states: {}".format(self.model.nr_states))
@@ -135,7 +160,7 @@ class Model:
 
             for action in state.actions:
                 for transition in action.transitions:
-                    print(f"From{ ' initial' if initial else '' } state {state}, action {action} "
+                    print(f"From{' initial' if initial else ''} state {state}, action {action} "
                           f"with probability {transition.value()}, "
                           f"go to state {transition.column}")
 

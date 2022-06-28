@@ -23,12 +23,13 @@ model = Model(path)
 simulator = Simulator(model)
 
 observations = simulator.mk_observations()
-public_matrix = simulator.get_public_matrix()
 
-freq_learner = FrequentistLearner(public_matrix, observations)
-print(freq_learner.run_learner())
+model.print_model()
+
+freq_learner = FrequentistLearner(model, observations)
+freq_result = freq_learner.run_learner()
+model.print_matrix(freq_result)
 
 learner = DirichletLearner(model, observations)
 new_matrix = learner.run_learner()
-model.print_model()
 model.print_matrix(new_matrix)

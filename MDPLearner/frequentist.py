@@ -1,17 +1,21 @@
-from typing import List, Dict
+from typing import Dict
+from copy import deepcopy
 
-from MDPLearner.model import Matrix, Probability, State, Action
+from MDPLearner.model import Model, Probability, State, Action
 from MDPLearner.simulator import Observation
 
 ComputedProbs = Dict[tuple[State, Action, State], Probability]
 
 
 class FrequentistLearner:
-    def __init__(self, public_matrix: Matrix, observations: Observation, laplace_smoothing: float = 0):
-        self.matrix = public_matrix
+    def __init__(self, model: Model, observations: Observation, laplace_smoothing: float = 0.0,
+                 use_coupled_list: bool = True):
+        self.model = model
+        self.matrix = model.transition_matrix
         self.observations = observations
         self.possible_observations = self.build_all_possible_observations()
         self.delta = laplace_smoothing
+        self.use_coupled_list = use_coupled_list
 
     def build_all_possible_observations(self):
         possible_obs: Observation = []
@@ -27,6 +31,7 @@ class FrequentistLearner:
         :return: Dict with computed probabilities for every state, action, state tuple.
         """
         computedprobs: ComputedProbs = {}
+        final = deepcopy(self.matrix)
         N: Dict[tuple[State, Action], int] = {}
         m: Dict[tuple[State, Action], int] = {}
 
@@ -45,8 +50,12 @@ class FrequentistLearner:
                 computedprobs[obs] += 1
                 N[tuple[obs[0], obs[1]]] += 1
 
-        # for every entry of the dict, divide by N transitions from a state, action (tuple[0] and tuple[1])
+        # for every entry of the dict, divide by N transitions from a [state, action] (tuple[0] and tuple[1])
         for key in computedprobs.keys():
-            computedprobs[key] = (computedprobs[key] + self.delta) / (N[tuple[key[0], key[1]]] + m[tuple[key[0], key[1]]] * self.delta)
+            final[key[0]][key[1]][key[2]] = (computedprobs[key] + self.delta) / (
+                        N[tuple[key[0], key[1]]] + m[tuple[key[0], key[1]]] * self.delta)
 
-        return computedprobs
+        if self.use_coupled_list:
+            final = self.model.update_probs_coupled(final)
+
+        return final
