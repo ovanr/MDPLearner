@@ -1,5 +1,5 @@
 
-from sys import argv
+from math import floor
 import argparse
 
 from MDPLearner.logging import set_up_logging, INFO, WARNING
@@ -40,7 +40,9 @@ print()
 print("--------- Dirichlet Learned Model -----------")
 learner = DirichletLearner(model, observations)
 dirichlet_matrices = learner.run_learner_incremental(num_batches=args.batches, init_value=args.init_alpha)
+batch_size = floor(len(observations) / args.batches)
+print(batch_size)
 for (i,m) in enumerate(dirichlet_matrices):
-    print(f"Matrix {i}:")
+    print(f"Matrix {i+1}:")
     model.print_matrix(m)
-    model.gen_prism_model(m, f"out/dirichlet_model_{i}.prism")
+    model.gen_prism_model(m, f"out/dirichlet_model_{(i+1)*batch_size}.prism")
