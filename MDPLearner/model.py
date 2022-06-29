@@ -68,6 +68,15 @@ def make_all_schedulers(matrix: Matrix) -> List[Scheduler]:
     return new_schedulers
 
 
+def flatten_matrix(matrix: Matrix) -> Dict:
+    final = {}
+    for state in matrix.keys():
+        for action in matrix[state].keys():
+            for next_state in matrix[state][action].keys():
+                final[(state, action, next_state)] = matrix[state][action][next_state]
+    return final
+
+
 class Model:
     def __init__(self, model_path: str):
         self.prism_program = stormpy.parse_prism_program(model_path)  # type: ignore
@@ -122,14 +131,25 @@ class Model:
         return make_all_schedulers(matrix)
 
     def mk_coupled_list(self) -> CoupledList:
-        # each model file should have data on which transition probabilities are coupled
-        return [[]]
+        matrix = flatten_matrix(self.transition_matrix)
+        l = []
+        seen = []
+        for key in matrix.keys():
+            temp = [key]
+            seen.append(key)
+            for key2 in matrix.keys():
+                if (key2 not in seen) and (key != key2) and (matrix[key] == matrix[key2]):
+                    temp.append(key2)
+                    seen.append(key2)
+            if len(temp) != 1:
+                l.append(temp)
+        return l
 
     def update_probs_coupled(self, matrix: Matrix) -> Matrix:
-        # mean
         if not self.coupled_probs[0]:  # if list is empty
             return matrix
 
+        # mean
         for elem in self.coupled_probs:
             temp = 0
             for trans in elem:

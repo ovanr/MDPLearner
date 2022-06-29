@@ -1,10 +1,11 @@
 from typing import Dict, List
 from copy import deepcopy
 
-from MDPLearner.model import Model, Probability, State, Action, Matrix
+from MDPLearner.model import Model, Probability, State, Action, Matrix, CoupledList
 from MDPLearner.simulator import Observation
 
 ComputedProbs = Dict[tuple[State, Action, State], Probability]
+
 
 def computedProbsToDict(flatProbs):
     matrix = {}
@@ -12,16 +13,16 @@ def computedProbsToDict(flatProbs):
         next_pairs = filter(lambda key: s == key[0], flatProbs.keys())
         action_dict = {}
         for (_, a, s_next) in next_pairs:
-            prob = flatProbs[(s,a,s_next)]
+            prob = flatProbs[(s, a, s_next)]
             if a in action_dict:
                 action_dict[a][s_next] = prob
             else:
-                action_dict[a] = { s_next: prob }
+                action_dict[a] = {s_next: prob}
 
         matrix[s] = action_dict
-
     return matrix
-        
+
+
 class FrequentistLearner:
     def __init__(self, model: Model, observations: List[Observation], laplace_smoothing: float = 0.0,
                  use_coupled_list: bool = True):
@@ -65,7 +66,7 @@ class FrequentistLearner:
                 computedprobs[obs] += 1
                 N[(obs[0], obs[1])] += 1
 
-        # for every entry of the dict, divide by N transitions from a [state, action] (tuple[0] and tuple[1])
+        # for every entry of the dict, divide by N transitions from a [state, action]
         for key in computedprobs.keys():
             final[key[0]][key[1]][key[2]] = (computedprobs[key] + self.delta) / \
                                             (N[(key[0], key[1])] + m[(key[0], key[1])] * self.delta)
