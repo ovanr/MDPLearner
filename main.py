@@ -41,7 +41,7 @@ print("--------- Dirichlet Learned Model -----------")
 learner = DirichletLearner(model, observations)
 dirichlet_matrices = learner.run_learner_incremental(num_batches=args.batches, init_value=args.init_alpha)
 batch_size = floor(len(observations) / args.batches)
-print(batch_size)
+
 for (i,m) in enumerate(dirichlet_matrices):
     print(f"Matrix {i+1}:")
     model.print_matrix(m)
