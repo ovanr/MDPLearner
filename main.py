@@ -31,7 +31,7 @@ observations = simulator.mk_observations()
 
 print()
 print("--------- Frequentist Learned Model -----------")
-freq_learner = FrequentistLearner(model, observations)
+freq_learner = FrequentistLearner(model, observations, laplace_smoothing = 0.1)
 frequentist_matrix = freq_learner.run_learner()
 model.print_matrix(frequentist_matrix)
 model.gen_prism_model(frequentist_matrix, "out/frequentist_model.prism")
