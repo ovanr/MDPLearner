@@ -14,7 +14,7 @@ out_file=$(basename `echo $model | cut -d '.' -f 1`.dat)
 
 echo '# n actual freq dirichlet' &> $out_file
 
-for n in 200 500 1000 2000 4000 6000 8000 10000; do
+for n in 50 100 200 500 1000 2000 4000 6000 8000 10000; do
     rm out/*
     python main.py -N $n --batches 1 $model &> /dev/null
     actual=`runStorm out/model.prism`
