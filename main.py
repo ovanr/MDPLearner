@@ -13,7 +13,7 @@ parser.add_argument('input', metavar='FILE', type=str, help='input model to lear
 parser.add_argument('-N', metavar='int', type=int, default=1000, help='number of simulator runs')
 parser.add_argument('--batches', metavar='int', type=int, default=10, help='number of batches in dirichlet learner')
 parser.add_argument('--laplace-smoothing', metavar='float', type=float, default=0.1, help='frequentist learner laplace smoothing value')
-parser.add_argument('--use-coupled', metavar='bool', type=bool, default=False, help='assume transitions with same probability are coupled')
+parser.add_argument('--use-coupled', default=False, action='store_true', help='assume transitions with same probability are coupled')
 parser.add_argument('--init-alpha', metavar='float', type=float, default=0.0, help='dirichlet learner initial alpha parameter value')
 parser.add_argument( '--verbose', default=False, action="store_true", help='be verbose')
 args = parser.parse_args()
