@@ -13,7 +13,7 @@ This project depends on *stormpy*
 
 ### Usage
 
-```bash
+```
 usage: main.py [-h] [-N int] [--batches int] [--laplace-smoothing float] [--use-coupled bool] [--init-alpha float] [--verbose] FILE
 
 Model Learner
